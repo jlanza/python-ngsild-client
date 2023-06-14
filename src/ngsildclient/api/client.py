@@ -227,7 +227,8 @@ class Client:
         NgsiNotConnectedError
         """
         url = f"{self.url}/{ENDPOINT_ENTITIES}"
-        params = {"type": "None", "limit": 0, "count": "true"}
+        # params = {"type": "None", "limit": 0, "count": "true"}
+        params = {"type": "None", "count": "true"}
         try:
             r = self.session.get(
                 url,
@@ -309,12 +310,15 @@ class Client:
         Entity
             The entities successfully upserted
         """
+        print(len(entities))
         if len(entities) == 1:
             if isinstance(entities[0], Entity):
                 entity = entities[0]
                 return self.entities.create(entity)
             else:
                 entities = entities[0]
+
+        print(entities)
         return self.batch.create(entities)
 
     def get(
