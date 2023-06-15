@@ -160,7 +160,7 @@ class RegistrationInfo:
             if id:
                 self.id = id
 
-        def as_dict(self):
+        def to_dict(self):
             d = {}
             d["type"] = self.type
             if (self.id):
@@ -190,7 +190,7 @@ class RegistrationInfo:
     def to_dict(self) -> dict:
         d = {}
         if self.entities:
-            d["entities"] = [e.as_dict() for e in self.entities]
+            d["entities"] = [e.to_dict() for e in self.entities]
         if self.property_names:
             d["propertyNames"] = self.property_names
         if self.relationship_names:
@@ -201,6 +201,7 @@ class RegistrationInfo:
 class CSourceRegistration:
     endpoint: str = None
     information: list[RegistrationInfo] = None
+    context: Union[str, list[str]] = None
     id: str = None
     type: str = "ContextSourceRegistration"
     registration_name: str = None
@@ -262,21 +263,23 @@ class CSourceRegistration:
         if self.other_properties:
             for k, v in self.other_properties.items():
                 d[k] = v
+        d["@context"] = self.context
         return d
-
+    
 class CSourceRegistrationBuilder:
     def __init__(
         self,
         endpoint: str,
         information: Union[RegistrationInfo, list[RegistrationInfo]],
+        context: Union[str, List[str]] = CORE_CONTEXT
     ):
         if not isinstance(endpoint, str) and not url.isurl(endpoint):
             raise ValueError("endpoint shall be a string matching a valid URL")
         
         if isinstance(information, RegistrationInfo):
-            self._csourcereg = CSourceRegistration(endpoint, [ information ])
+            self._csourcereg = CSourceRegistration(endpoint, [ information ], context)
         elif isinstance(information, list):
-            self._csourcereg = CSourceRegistration(endpoint, information)
+            self._csourcereg = CSourceRegistration(endpoint, information, context)
         else:
             raise ValueError("information shall be a list of RegistrationInfo")
 
@@ -399,4 +402,4 @@ class CSourceRegistrationBuilder:
     def build(self) -> dict:
         if not self._csourcereg.endpoint or not self._csourcereg.information :
             raise ValueError("Both endpoint and information shall be present.")
-        return self._csourcereg.to_dict()
+        return self._csourcereg
