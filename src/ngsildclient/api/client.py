@@ -33,6 +33,7 @@ from .batch import Batch, BatchResult
 from .types import Types
 from .contexts import Contexts
 from .subscriptions import Subscriptions
+from .csourceregistrations import CSourceRegistrations
 from .temporal import Temporal
 from .alt import Alt
 from .follow import LinkFollower
@@ -174,6 +175,7 @@ class Client:
         self._types = Types(self, f"{self.url}/{ENDPOINT_TYPES}")
         self._contexts = Contexts(self, f"{self.url}/{ENDPOINT_CONTEXTS}")
         self._subscriptions = Subscriptions(self, f"{self.url}/{ENDPOINT_SUBSCRIPTIONS}")
+        self._csourceregs = CSourceRegistrations(self, f"{self.url}/{ENDPOINT_CSOURCE_REGISTRATIONS}")
 
         if port_temporal == port:  # temporal endpoint mounted at /ngsi-ld/v1
             self._temporal = Temporal(
@@ -278,6 +280,10 @@ class Client:
     @property
     def subscriptions(self):
         return self._subscriptions
+    
+    @property
+    def csourceregs(self):
+        return self._csourceregs
 
     @property
     def temporal(self):
