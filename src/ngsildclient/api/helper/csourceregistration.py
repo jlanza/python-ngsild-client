@@ -12,7 +12,8 @@
 import inspect
 from dataclasses import dataclass, fields
 
-from dataclasses import dataclass
+# pyhumps
+import humps
 
 from datetime import datetime, timedelta
 import isodate
@@ -24,6 +25,7 @@ from ngsildclient.model.constants import CORE_CONTEXT
 from geojson import Point, LineString, Polygon, MultiPoint
 from geojson.geometry import Geometry
 
+from typing import get_origin
 from typing import (
     Literal,
     Sequence,
@@ -38,9 +40,10 @@ from typing import (
 
 from enum import Enum, unique
 
+
 @unique
 class ImplementedOperation(Enum):
-    # Context Information Provision  
+    # Context Information Provision
     CREATE_ENTITY = "createEntity"
     UPDATE_ENTITY = "updateEntity"
     APPEND_ATTRS = "appendAttrs"
@@ -62,7 +65,7 @@ class ImplementedOperation(Enum):
     REPLACE_ATTRS = "replaceAttrs"
     MERGE_BATCH = "mergeBatch"
 
-    # Context Information Consumption  
+    # Context Information Consumption
     RETRIEVE_ENTITY = "retrieveEntity"
     QUERY_ENTITY = "queryEntity"
     QUERY_BATCH = "queryBatch"
@@ -75,7 +78,7 @@ class ImplementedOperation(Enum):
     RETRIEVE_ATTR_TYPE_DETAILS = "retrieveAttrTypeDetails"
     RETRIEVE_ATTR_TYPE_INFO = "retrieveAttrTypeInfo"
 
-    # Context Information Subscription 
+    # Context Information Subscription
     CREATE_SUBSCRIPTION = "createSubscription"
     UPDATE_SUBSCRIPTION = "updateSubscription"
     RETRIEVE_SUBSCRIPTION = "retrieveSubscription"
@@ -100,31 +103,38 @@ class TimeInterval:
         start_at: datetime,
         end_at: datetime = None,
     ):
-
-        if not isinstance(start_at, datetime) or (end_at  and not isinstance(end_at, datetime)):
+        if not isinstance(start_at, datetime) or (
+            end_at and not isinstance(end_at, datetime)
+        ):
             raise ValueError("start_at and end_at shall be datetime")
-      
+
         self.start_at = iso8601.from_datetime(start_at)
-        
+
         if end_at:
             self.end_at = iso8601.from_datetime(end_at)
-    
+
     def to_dict(self) -> dict:
         d = {}
         d["startAt"] = self.start_at
         if self.end_at:
             d["endAt"] = self.end_at
         return d
-        
+
 
 @dataclass
 class RegistrationManagementInfo:
     local_only: bool = None
     cache_duration: Union[str, datetime] = None
-    timeout: int = None 
+    timeout: int = None
     cooldown: int = None
 
-    def __init__(self, local_only: bool = None, cache_duration: timedelta = None, timeout: int = None, cooldown: int = None):
+    def __init__(
+        self,
+        local_only: bool = None,
+        cache_duration: timedelta = None,
+        timeout: int = None,
+        cooldown: int = None,
+    ):
         if local_only:
             self.local_only = local_only
         if cache_duration:
@@ -150,13 +160,31 @@ class RegistrationManagementInfo:
             d["cooldown"] = self.cooldonw
         return d
 
+    @classmethod
+    def from_dict(cls, d: dict) -> "RegistrationManagementInfo":
+        d = humps.decamelize(d)
+        return cls(
+            local_only=d.get("local_only"),
+            cache_duration=d.get("cache_duration"),
+            timeout=d.get("timeout"),
+            cooldown=d.get("cooldown"),
+        )
+
+
+@dataclass
 class RegistrationInfo:
+    @dataclass
     class EntityInfo:
         id: str = None
         id_pattern: str = None
         type: Union[str, list[str]] = None
 
-        def __init__(self, type: Union[str, list[str]], id_pattern: str = None, id: str = None):
+        def __init__(
+            self,
+            type: Union[str, list[str]],
+            id_pattern: str = None,
+            id: str = None,
+        ):
             self.type = type
             if id_pattern:
                 self.id_pattern = id_pattern
@@ -166,22 +194,40 @@ class RegistrationInfo:
         def to_dict(self):
             d = {}
             d["type"] = self.type
-            if (self.id):
+            if self.id:
                 d["id"] = self.id
-            if (self.id_pattern):
+            if self.id_pattern:
                 d["idPattern"] = self.id_pattern
             return d
+
+        @classmethod
+        def from_dict(cls, d: dict) -> "RegistrationInfo.EntityInfo":
+            d = humps.decamelize(d)
+            return cls(
+                type=d["type"], id=d.get("id"), id_pattern=d.get("idPattern")
+            )
 
     entities: list[EntityInfo] = None
     property_names: list[str] = None
     relationship_names: list[str] = None
 
-    def __init__(self, entities: list[EntityInfo] = None, property_names: list[str] = None, relationship_names: list[str] = None):
-        if ((isinstance(entities, list) and len(entities) == 0) or 
-            (isinstance(property_names, list) and len(property_names) == 0) or 
-            (isinstance(relationship_names, list) and len(relationship_names) == 0)
+    def __init__(
+        self,
+        entities: list[EntityInfo] = None,
+        property_names: list[str] = None,
+        relationship_names: list[str] = None,
+    ):
+        if (
+            (isinstance(entities, list) and len(entities) == 0)
+            or (isinstance(property_names, list) and len(property_names) == 0)
+            or (
+                isinstance(relationship_names, list)
+                and len(relationship_names) == 0
+            )
         ):
-            raise ValueError("entities, property_names and relationship_names shall not be empty lists")
+            raise ValueError(
+                "entities, property_names and relationship_names shall not be empty lists"
+            )
 
         if entities:
             self.entities = entities
@@ -193,12 +239,27 @@ class RegistrationInfo:
     def to_dict(self) -> dict:
         d = {}
         if self.entities:
+            print(self.entities)
             d["entities"] = [e.to_dict() for e in self.entities]
         if self.property_names:
             d["propertyNames"] = self.property_names
         if self.relationship_names:
             d["relationshipNames"] = self.relationship_names
         return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "RegistrationInfo":
+        d = humps.decamelize(d)
+        entities = []
+        if "entities" in d:
+            for e in d["entities"]:
+                entities.append(cls.EntityInfo.from_dict(e))
+        return cls(
+            entities=entities,
+            property_names=d.get("propertyNames"),
+            relationship_names=d.get("relationshipNames"),
+        )
+
 
 @dataclass
 class CSourceRegistration:
@@ -224,6 +285,50 @@ class CSourceRegistration:
     management: RegistrationManagementInfo = None
     other_properties: dict = None
 
+    @classmethod
+    def from_dict(cls, d: dict) -> "CSourceRegistration":
+        d = humps.decamelize(d)
+
+        constructor = {}
+        other_properties = {}
+        fieldtypes = {f.name: f.type for f in fields(cls)}
+        field_names = [field.name for field in fields(cls)]
+        for k, v in d.items():
+            if k in field_names:
+                klass = fieldtypes.get(k)
+                try:
+                    if get_origin(klass) == list:
+                        element_type = klass.__args__[0]
+                        if hasattr(element_type, "from_dict"):
+                            constructor[k] = [
+                                element_type.from_dict(i) for i in v
+                            ]
+                        else:
+                            constructor[k] = [element_type(**v) for i in v]
+                    elif hasattr(klass, "from_dict"):
+                        constructor[k] = klass.from_dict(v)
+                    else:
+                        constructor[k] = klass(**v)
+                except Exception as e:
+                    constructor[k] = v
+            else:
+                other_properties[k] = v
+
+        constructor["other_properties"] = other_properties
+        constructor["context"] = constructor["other_properties"].pop(
+            "@context", CORE_CONTEXT
+        )
+
+        return cls(**constructor)
+
+    def add_registration_info(self, registration_info: RegistrationInfo):
+        if not self.information:
+            self.information = []
+
+        # TODO: Check if the entity is already in the list (exactly? or just the type?)
+
+        self.information.append(registration_info)
+
     def to_dict(self) -> dict:
         d = {}
         if self.id:
@@ -234,7 +339,12 @@ class CSourceRegistration:
         if self.description:
             d["description"] = self.description
         if self.information:
-            d["information"] = [i.to_dict() for i in self.information]
+            d["information"] = []
+            for i in self.information:
+                if isinstance(i, RegistrationInfo):
+                    d["information"].append(i.to_dict())
+                else:
+                    d["information"].append(i)
         if self.tenant:
             d["tenant"] = self.tenant
         if self.observation_interval:
@@ -262,27 +372,32 @@ class CSourceRegistration:
             d["refreshRate"] = self.refresh_rate
         if self.management:
             d["management"] = self.management.to_dict()
-        # TODO: Check to use JSON 
+        # TODO: Check to use JSON
         if self.other_properties:
             for k, v in self.other_properties.items():
                 d[k] = v
         d["@context"] = self.context
         return d
-    
+
+
 class CSourceRegistrationBuilder:
     def __init__(
         self,
         endpoint: str,
         information: Union[RegistrationInfo, list[RegistrationInfo]],
-        context: Union[str, List[str]] = CORE_CONTEXT
+        context: Union[str, List[str]] = CORE_CONTEXT,
     ):
         if not isinstance(endpoint, str) and not url.isurl(endpoint):
             raise ValueError("endpoint shall be a string matching a valid URL")
-        
+
         if isinstance(information, RegistrationInfo):
-            self._csourcereg = CSourceRegistration(endpoint, [ information ], context)
+            self._csourcereg = CSourceRegistration(
+                endpoint, [information], context
+            )
         elif isinstance(information, list):
-            self._csourcereg = CSourceRegistration(endpoint, information, context)
+            self._csourcereg = CSourceRegistration(
+                endpoint, information, context
+            )
         else:
             raise ValueError("information shall be a list of RegistrationInfo")
 
@@ -305,11 +420,13 @@ class CSourceRegistrationBuilder:
         return self
 
     def observation_interval(self, start_at: datetime, end_at: datetime = None):
-        if not isinstance(start_at, datetime) or not isinstance(end_at, datetime):
+        if not isinstance(start_at, datetime) or not isinstance(
+            end_at, datetime
+        ):
             raise ValueError("start_at and end_at shall be datetime")
         self._csourcereg.observation_interval = TimeInterval(start_at, end_at)
         return self
-    
+
     def management_interval(self, start_at: datetime, end_at: datetime = None):
         self._csourcereg.management_interval = TimeInterval(start_at, end_at)
         return self
@@ -324,7 +441,7 @@ class CSourceRegistrationBuilder:
                 value = Point((lon, lat))
             else:
                 raise ValueError("lat, lon tuple expected")
-        
+
         self._csourcereg.location = value
         return self
 
@@ -338,7 +455,7 @@ class CSourceRegistrationBuilder:
                 value = Point((lon, lat))
             else:
                 raise ValueError("lat, lon tuple expected")
-        
+
         self._csourcereg.observation_space = value
         return self
 
@@ -352,7 +469,7 @@ class CSourceRegistrationBuilder:
                 value = Point((lon, lat))
             else:
                 raise ValueError("lat, lon tuple expected")
-        
+
         self._csourcereg.operation_space = value
         return self
 
@@ -361,48 +478,74 @@ class CSourceRegistrationBuilder:
             raise ValueError("expires_at shall be a datetime")
         self._csourcereg.expires_at = iso8601.from_datetime(value)
         return self
-    
+
     def context_source_info(self, value: dict):
         if not isinstance(value, dict):
-            raise ValueError("context_source_info shall be a dict, a generic key-value array")
+            raise ValueError(
+                "context_source_info shall be a dict, a generic key-value array"
+            )
         self._csourcereg.context_source_info = value
         return self
-    
+
     def scope(self, value: Union[str, List[str]]):
         if not isinstance(value, str) and not isinstance(value, list):
             raise ValueError("scope shall be a string or a list of strings")
         self._csourcereg.scope = value
         return self
 
-    def mode(self, value: Literal["inclusive", "exclusive", "redirect", "auxiliary"] = "inclusive"): 
-        if not isinstance(value, str) and value not in ["inclusive", "exclusive", "redirect", "auxiliary"]:
-            raise ValueError("mode shall be a string matching one of the following values: inclusive, exclusive, redirect, auxiliary")
+    def mode(
+        self,
+        value: Literal[
+            "inclusive", "exclusive", "redirect", "auxiliary"
+        ] = "inclusive",
+    ):
+        if not isinstance(value, str) and value not in [
+            "inclusive",
+            "exclusive",
+            "redirect",
+            "auxiliary",
+        ]:
+            raise ValueError(
+                "mode shall be a string matching one of the following values: inclusive, exclusive, redirect, auxiliary"
+            )
         self._csourcereg.mode = value
         return self
-    
-    def operations(self, value: List[Union[ImplementedOperation, OperationsGroup]]):
+
+    def operations(
+        self, value: List[Union[ImplementedOperation, OperationsGroup]]
+    ):
         if not isinstance(value, list):
             raise ValueError("operations shall be a list of strings")
         self._csourcereg.operations = [op.value for op in value]
         return self
-    
+
     def refresh_rate(self, value: timedelta):
         if not isinstance(value, timedelta):
             raise ValueError("refresh_rate shall be a timedelta")
         self._csourcereg.refresh_rate = isodate.duration_isoformat(value)
         return self
 
-    def management(self, local_only: bool = None, cache_duration: timedelta = None, time: int = None, cooldown: int = None):
-        self._csourcereg.management = RegistrationManagementInfo(local_only, cache_duration, time, cooldown)
+    def management(
+        self,
+        local_only: bool = None,
+        cache_duration: timedelta = None,
+        time: int = None,
+        cooldown: int = None,
+    ):
+        self._csourcereg.management = RegistrationManagementInfo(
+            local_only, cache_duration, time, cooldown
+        )
         return self
-    
+
     def other_properties(self, value: dict):
         if not isinstance(value, dict):
-            raise ValueError("other_properties shall be a dict, a generic key-value array")
+            raise ValueError(
+                "other_properties shall be a dict, a generic key-value array"
+            )
         self._csourcereg.other_properties = value
         return self
 
     def build(self) -> dict:
-        if not self._csourcereg.endpoint or not self._csourcereg.information :
+        if not self._csourcereg.endpoint or not self._csourcereg.information:
             raise ValueError("Both endpoint and information shall be present.")
         return self._csourcereg
