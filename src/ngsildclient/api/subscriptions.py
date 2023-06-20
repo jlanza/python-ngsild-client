@@ -97,7 +97,7 @@ class Subscriptions:
     def _criteria_only(subscr: dict):
         params = subscr.copy()
         params.pop("id", None)
-        params.pop("name", None)
+        params.pop("subscriptionName", None)
         params.pop("description", None)
         params.pop("isActive", None)
         return params
