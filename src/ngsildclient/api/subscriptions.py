@@ -42,9 +42,11 @@ class Subscriptions:
             subscr = subscr.to_dict()
 
         if raise_on_conflict:
-            conflicts = self.conflicts(subscr)
+            conflicts = self._conflicts(subscr)
             if conflicts:
-                raise ValueError(f"Some subscriptions already exist with same target : {conflicts}")
+                raise ValueError(
+                    f"Some subscriptions already exist with same target : {conflicts}"
+                )
         r = self._session.post(f"{self.url}/", json=subscr)
         self._client.raise_for_status(r)
         location = r.headers.get("Location")
@@ -56,17 +58,23 @@ class Subscriptions:
         id_returned_from_broker = location.rsplit("/", 1)[-1]
         id = subscr.get("id")
         if id is not None and id != id_returned_from_broker:
-            raise NgsiApiError(f"Broker returned wrong id. Expected={id} Returned={id_returned_from_broker}")
+            raise NgsiApiError(
+                f"Broker returned wrong id. Expected={id} Returned={id_returned_from_broker}"
+            )
         return id_returned_from_broker
 
     @rfc7807_error_handle
-    def list(self, pattern: str = None, ctx: str = CORE_CONTEXT) -> Optional[dict]:
+    def list(
+        self, pattern: str = None, ctx: str = CORE_CONTEXT
+    ) -> Optional[dict]:
         headers = {
             "Accept": "application/ld+json",
             "Content-Type": None,
         }  # overrides session headers
         if ctx is not None:
-            headers["Link"] = f'<{ctx}>; rel="{CORE_CONTEXT}"; type="application/ld+json"'
+            headers[
+                "Link"
+            ] = f'<{ctx}>; rel="{CORE_CONTEXT}"; type="application/ld+json"'
         r = self._session.get(f"{self.url}")
         subscriptions = r.json()
         if pattern is not None:
@@ -97,17 +105,21 @@ class Subscriptions:
     @staticmethod
     def _hash(subscr: dict):
         criteria = Subscriptions._criteria_only(subscr)
-        return sha1(json.dumps(criteria, sort_keys=True).encode("utf-8")).digest()
+        return sha1(
+            json.dumps(criteria, sort_keys=True).encode("utf-8")
+        ).digest()
 
     @rfc7807_error_handle
-    def conflicts(self, subscr: dict, ctx: str = CORE_CONTEXT) -> list:
+    def _conflicts(self, subscr: dict, ctx: str = CORE_CONTEXT) -> list:
         hashref = Subscriptions._hash(subscr)
         headers = {
             "Accept": "application/ld+json",
             "Content-Type": None,
         }  # overrides session headers
         if ctx is not None:
-            headers["Link"] = f'<{ctx}>; rel="{CORE_CONTEXT}"; type="application/ld+json"'
+            headers[
+                "Link"
+            ] = f'<{ctx}>; rel="{CORE_CONTEXT}"; type="application/ld+json"'
         r = self._session.get(f"{self.url}")
         # Response can be an item or a list of items
         # item = [item] if not isinstance(item, list) else item
@@ -123,7 +135,9 @@ class Subscriptions:
             "Content-Type": None,
         }  # overrides session headers
         if ctx is not None:
-            headers["Link"] = f'<{ctx}>; rel="{CORE_CONTEXT}"; type="application/ld+json"'
+            headers[
+                "Link"
+            ] = f'<{ctx}>; rel="{CORE_CONTEXT}"; type="application/ld+json"'
         r = self._session.get(f"{self.url}/{id}", headers=headers)
         self._client.raise_for_status(r)
         return r.json()
