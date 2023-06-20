@@ -69,7 +69,13 @@ class Subscriptions:
             subscriptions = [
                 x
                 for x in subscriptions
-                if re.search(pattern, x.get("name", "") + x.get("description", ""), re.IGNORECASE)
+                if re.search(
+                    pattern,
+                    x.get("id", "")
+                    + x.get("subscriptionName", "")
+                    + x.get("description", ""),
+                    re.IGNORECASE,
+                )
             ]
         return subscriptions
 
