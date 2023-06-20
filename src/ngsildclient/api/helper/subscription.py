@@ -53,15 +53,24 @@ class Endpoint:
             d["notifierInfo"] = [{k: v} for k, v in self.notifier_info.items()]
 
 
+@dataclass
+class NotificationParams:
+    endpoint: Endpoint
     attrs: list[str] = None
     format: str = "normalized"
+    sys_attrs: bool = False
+    show_changes: bool = False
 
     def to_dict(self) -> dict:
         d = {}
         if self.attrs:
             d["attributes"] = self.attrs
         d["format"] = self.format
-        d["endpoint"] = {"uri": self.uri, "accept": "application/ld+json"}
+        if self.sys_attrs:  # By default is false
+            d["sysAttrs"] = self.sys_attrs
+        if self.show_changes:  # By default is false
+            d["showChanges"] = self.show_changes
+        d["endpoint"] = self.endpoint.to_dict()
         return d
 
 
