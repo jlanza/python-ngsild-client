@@ -67,6 +67,7 @@ class Endpoint:
             d["receiverInfo"] = [{k: v} for k, v in self.receiver_info.items()]
         if self.notifier_info:
             d["notifierInfo"] = [{k: v} for k, v in self.notifier_info.items()]
+        return d
 
 
 @dataclass
@@ -157,7 +158,7 @@ class Subscription:
 class SubscriptionBuilder:
     def __init__(self, uri: str, receiver_headers: dict = None):
         notification = NotificationParams(
-            Endpoint(uri=uri, receiver_info=receiver_headers)
+            endpoint=Endpoint(uri=uri, receiver_info=receiver_headers)
         )
         self._subscr = Subscription(notification)
         self._subscr.entities = []
@@ -220,9 +221,9 @@ class SubscriptionBuilder:
         self._subscr.ctx = value
         return self
 
-    def build(self) -> dict:
+    def build(self) -> Subscription:
         if self._subscr.entities == [] and self._subscr.watched_attrs is None:
             raise ValueError(
                 "At least one of (a) entities or (b) watchedAttributes shall be present."
             )
-        return self._subscr.to_dict()
+        return self._subscr
