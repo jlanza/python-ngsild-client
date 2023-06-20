@@ -64,6 +64,8 @@ class Subscriptions:
         r = self._session.get(f"{self.url}")
         subscriptions = r.json()
         if pattern is not None:
+            if not isinstance(subscriptions, list):
+                subscriptions = [subscriptions]
             subscriptions = [
                 x
                 for x in subscriptions
@@ -95,7 +97,12 @@ class Subscriptions:
         if ctx is not None:
             headers["Link"] = f'<{ctx}>; rel="{CORE_CONTEXT}"; type="application/ld+json"'
         r = self._session.get(f"{self.url}")
-        return [x for x in r.json() if Subscriptions._hash(x) == hashref]
+        # Response can be an item or a list of items
+        # item = [item] if not isinstance(item, list) else item
+        r = r.json()
+        if not isinstance(r, list):
+            r = [r]
+        return [x for x in r if Subscriptions._hash(x) == hashref]
 
     @rfc7807_error_handle
     def get(self, id: str, ctx: str = CORE_CONTEXT) -> dict:
