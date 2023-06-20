@@ -10,7 +10,7 @@
 # Author: Fabien BATTELLO <fabien.battello@orange.com> et al.
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union
 from functools import partialmethod
 from hashlib import sha1
 
@@ -23,6 +23,7 @@ from .exceptions import NgsiApiError
 if TYPE_CHECKING:
     from .client import Client
 from .exceptions import NgsiResourceNotFoundError, rfc7807_error_handle
+from .helper.subscription import Subscription
 
 
 class Subscriptions:
@@ -34,7 +35,12 @@ class Subscriptions:
         self.url = url
 
     @rfc7807_error_handle
-    def create(self, subscr: dict, raise_on_conflict: bool = True) -> bool:
+    def create(
+        self, subscr: Union[Subscription, dict], raise_on_conflict: bool = True
+    ) -> str:
+        if isinstance(subscr, Subscription):
+            subscr = subscr.to_dict()
+
         if raise_on_conflict:
             conflicts = self.conflicts(subscr)
             if conflicts:
