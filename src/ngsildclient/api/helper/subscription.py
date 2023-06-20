@@ -123,7 +123,7 @@ class Subscription:
         if self.description:
             d["description"] = self.description
         if self.entities:
-            d["entities"] = self.entities
+            d["entities"] = [e.to_dict() for e in self.entities]
         if self.watched_attrs:
             d["watchedAttributes"] = self.watched_attrs
         if self.notification_trigger:
