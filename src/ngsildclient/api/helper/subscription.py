@@ -11,7 +11,21 @@
 
 from dataclasses import dataclass
 
-import ngsildclient.utils.url as url
+from typing import (
+    Literal,
+    Sequence,
+    Any,
+    Union,
+    List,
+    Tuple,
+    Optional,
+    Mapping,
+    Callable,
+)
+
+from datetime import datetime
+
+from ngsildclient.utils import iso8601, url
 from ngsildclient.model.constants import CORE_CONTEXT
 
 
@@ -29,6 +43,7 @@ class EntitySelector:
         if self.id_pattern:
             d["idPattern"] = self.id_pattern
         return d
+
 
 @dataclass
 class Endpoint:
@@ -81,18 +96,20 @@ class Subscription:
     type: str = "Subscription"
     name: str = None
     description: str = None
-    entities: list[dict] = None  # id, idPattern, or type
+    entities: list[EntitySelector] = None  # id, idPattern, or type
     watched_attrs: list[str] = None
-    # time_interval: int = 0
+    notification_trigger: list[str] = None
+    time_interval: int = 0
     query: str = None
-    # gquery: str = None
-    # csf: str = None
+    # TODO: create Geo JSON
+    geo_query: str = None
+    csf: str = None
     active: bool = True
-    # expiresat: datetime = None
-    # throttling: int = 0
-    # tquery: str = None
-    # scope: str = None
-    # lang: str = None
+    expires_at: Union[str, datetime] = None
+    throttling: int = 0
+    temporal_query: str = None
+    scope: str = None
+    lang: str = None
     ctx: str = CORE_CONTEXT
 
     def to_dict(self) -> dict:
@@ -101,15 +118,35 @@ class Subscription:
             d["id"] = self.id
         d["type"] = self.type
         if self.name:
-            d["name"] = self.name
+            d["subscriptionName"] = self.name
         if self.description:
             d["description"] = self.description
         if self.entities:
             d["entities"] = self.entities
         if self.watched_attrs:
             d["watchedAttributes"] = self.watched_attrs
+        if self.notification_trigger:
+            d["notificationTrigger"] = self.notification_trigger
+        if self.time_interval > 0 and not self.watched_attrs:
+            d["timeInterval"] = self.time_interval
         if self.query:
             d["q"] = self.query
+        if self.csf:
+            d["csf"] = self.csf
+        if self.expires_at:
+            if isinstance(self.expires_at, datetime):
+                d["expiresAt"] = iso8601.from_datetime(self.expires_at)
+            else:
+                d["expiresAt"] = self.expires_at
+        if self.throttling > 0 and not self.time_interval:
+            d["throttling"] = self.throttling
+        if self.temporal_query:
+            d["temporalQ"] = self.temporal_query
+        if self.scope:
+            d["scopeQ"] = self.scope
+        if self.scope:
+            d["lang"] = self.scope
+
         d["isActive"] = self.active
         d["notification"] = self.notification.to_dict()
         d["@context"] = self.ctx
@@ -117,11 +154,10 @@ class Subscription:
 
 
 class SubscriptionBuilder:
-    def __init__(
-        self,
-        uri: str,
-    ):
-        notification = NotificationParams(uri)
+    def __init__(self, uri: str, receiver_headers: dict = None):
+        notification = NotificationParams(
+            Endpoint(uri=uri, receiver_info=receiver_headers)
+        )
         self._subscr = Subscription(notification)
         self._subscr.entities = []
 
@@ -143,22 +179,16 @@ class SubscriptionBuilder:
         self._subscr.description = value
         return self
 
-    def select_id(self, value: str):
-        if not isinstance(value, str):
-            raise ValueError("EntitySelector id shall be a string")
-        self._subscr.entities.append({"id": value})
-        return self
-
-    def select_idpattern(self, value: str):
-        if not isinstance(value, str):
-            raise ValueError("EntitySelector idPattern shall be a string")
-        self._subscr.entities.append({"idPattern": value})
-        return self
-
-    def select_type(self, value: str):
-        if not isinstance(value, str):
+    def select_entities(
+        self, type: str, id: str = None, id_pattern: str = None
+    ):
+        if not isinstance(type, str):
             raise ValueError("EntitySelector type shall be a string")
-        self._subscr.entities.append({"type": value})
+        if id and not isinstance(id, str):
+            raise ValueError("EntitySelector id shall be a string")
+        if id_pattern and not isinstance(id_pattern, str):
+            raise ValueError("EntitySelector idPattern shall be a string")
+        self._subscr.entities.append(EntitySelector(type, id, id_pattern))
         return self
 
     def watch(self, value: list[str]):
@@ -191,5 +221,7 @@ class SubscriptionBuilder:
 
     def build(self) -> dict:
         if self._subscr.entities == [] and self._subscr.watched_attrs is None:
-            raise ValueError("At least one of (a) entities or (b) watchedAttributes shall be present.")
+            raise ValueError(
+                "At least one of (a) entities or (b) watchedAttributes shall be present."
+            )
         return self._subscr.to_dict()
