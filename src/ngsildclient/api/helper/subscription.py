@@ -16,8 +16,43 @@ from ngsildclient.model.constants import CORE_CONTEXT
 
 
 @dataclass
-class NotificationParams:
+class EntitySelector:
+    type: str
+    id: str = None
+    id_pattern: str = None
+
+    def to_dict(self) -> dict:
+        d = {}
+        d["type"] = self.type
+        if self.id:
+            d["id"] = self.id
+        if self.id_pattern:
+            d["idPattern"] = self.id_pattern
+        return d
+
+@dataclass
+class Endpoint:
     uri: str
+    accept: str = "application/ld+json"
+    timeout: int = 0
+    cooldown: int = 0
+    receiver_info: dict = None
+    notifier_info: dict = None
+
+    def to_dict(self) -> dict:
+        d = {}
+        d["uri"] = self.uri
+        d["accept"] = self.accept
+        if self.timeout > 0:  # Has to be greater than 0
+            d["timeout"] = self.timeout
+        if self.cooldown > 0:  # Has to be greater than 0
+            d["cooldown"] = self.cooldown
+        if self.receiver_info:
+            d["receiverInfo"] = [{k: v} for k, v in self.receiver_info.items()]
+        if self.notifier_info:
+            d["notifierInfo"] = [{k: v} for k, v in self.notifier_info.items()]
+
+
     attrs: list[str] = None
     format: str = "normalized"
 
