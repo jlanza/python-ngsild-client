@@ -11,7 +11,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Tuple, Generator, List, Union, Callable, Set
+from typing import (
+    TYPE_CHECKING,
+    Optional,
+    Tuple,
+    Generator,
+    List,
+    Union,
+    Callable,
+    Set,
+)
 
 if TYPE_CHECKING:
     from ngsildclient.model.constants import EntityOrId
@@ -170,12 +179,20 @@ class Client:
         self.verbose = verbose
         self.console = Console(verbose)
 
-        self._entities = Entities(self, f"{self.url}/{ENDPOINT_ENTITIES}", f"{self.url}/{ENDPOINT_ALT_QUERY_ENTITIES}")
+        self._entities = Entities(
+            self,
+            f"{self.url}/{ENDPOINT_ENTITIES}",
+            f"{self.url}/{ENDPOINT_ALT_QUERY_ENTITIES}",
+        )
         self._batch = Batch(self, f"{self.url}/{ENDPOINT_BATCH}")
         self._types = Types(self, f"{self.url}/{ENDPOINT_TYPES}")
         self._contexts = Contexts(self, f"{self.url}/{ENDPOINT_CONTEXTS}")
-        self._subscriptions = Subscriptions(self, f"{self.url}/{ENDPOINT_SUBSCRIPTIONS}")
-        self._csourceregs = CSourceRegistrations(self, f"{self.url}/{ENDPOINT_CSOURCE_REGISTRATIONS}")
+        self._subscriptions = Subscriptions(
+            self, f"{self.url}/{ENDPOINT_SUBSCRIPTIONS}"
+        )
+        self._csourceregs = CSourceRegistrations(
+            self, f"{self.url}/{ENDPOINT_CSOURCE_REGISTRATIONS}"
+        )
 
         if port_temporal == port:  # temporal endpoint mounted at /ngsi-ld/v1
             self._temporal = Temporal(
@@ -185,7 +202,9 @@ class Client:
             )
         else:  # temporal endpoint mounted at /
             self._temporal = Temporal(
-                self, f"{self.url_temporal}/{ENDPOINT_TEMPORAL}", f"{self.url_temporal}/{ENDPOINT_ALT_QUERY_TEMPORAL}"
+                self,
+                f"{self.url_temporal}/{ENDPOINT_TEMPORAL}",
+                f"{self.url_temporal}/{ENDPOINT_ALT_QUERY_TEMPORAL}",
             )
         self._alt = Alt(self)
         self.broker = Broker(Vendor.UNKNOWN, "N/A")
@@ -251,7 +270,9 @@ class Client:
                 self.console.print(str(e))
                 return
             if raise_for_disconnected:
-                raise NgsiNotConnectedError(f"Cannot connect to Context Broker at {self.hostname}:{self.port}: {e}")
+                raise NgsiNotConnectedError(
+                    f"Cannot connect to Context Broker at {self.hostname}:{self.port}: {e}"
+                )
             else:
                 logger.error(e)
                 return False
@@ -280,7 +301,7 @@ class Client:
     @property
     def subscriptions(self):
         return self._subscriptions
-    
+
     @property
     def csourceregs(self):
         return self._csourceregs
@@ -408,7 +429,9 @@ class Client:
         """
         return self.entities.exists(entity)
 
-    def upsert(self, *entities, update: bool = False) -> Union[bool, BatchResult]:
+    def upsert(
+        self, *entities, update: bool = False
+    ) -> Union[bool, BatchResult]:
         """Upsert one or many entities.
 
         Facade method backed by Batch.upsert() or Entities.upsert()
@@ -494,7 +517,7 @@ class Client:
 
         Parameters
         ----------
-        etype : str
+        type : str
             The entity's type
         q: str
             The query string (NGSI-LD Query Language)
@@ -563,9 +586,13 @@ class Client:
         entities: list[Entity] = []
         count = self.entities.count(type, q, gq, ctx=ctx)
         if count > max:
-            raise NgsiClientTooManyResultsError(f"{count} results exceed maximum {max}")
+            raise NgsiClientTooManyResultsError(
+                f"{count} results exceed maximum {max}"
+            )
         for page in range(ceil(count / limit)):
-            entities.extend(self.entities._query(type, q, gq, ctx, limit, page * limit))
+            entities.extend(
+                self.entities._query(type, q, gq, ctx, limit, page * limit)
+            )
         return entities
 
     def query_generator(
@@ -608,9 +635,13 @@ class Client:
         count = self.entities.count(type, q)
         for page in range(ceil(count / limit)):
             if batch:
-                yield self.entities._query(type, q, gq, ctx, limit, page * limit)
+                yield self.entities._query(
+                    type, q, gq, ctx, limit, page * limit
+                )
             else:
-                yield from self.entities._query(type, q, gq, ctx, limit, page * limit)
+                yield from self.entities._query(
+                    type, q, gq, ctx, limit, page * limit
+                )
 
     def query_handle(
         self,
@@ -739,10 +770,14 @@ class Client:
         payload = {
             "id": f"urn:ngsi-ld:__NGSILD-Tenant__:{tenant}",
             "type": "__NGSILD-Tenant__",
-            "@context": ["https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"],
+            "@context": [
+                "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+            ],
         }
         return self.session.post(
-            f"{self.url}/{ENDPOINT_BATCH}/upsert/", json=[payload], headers={"NGSILD-Tenant": tenant}
+            f"{self.url}/{ENDPOINT_BATCH}/upsert/",
+            json=[payload],
+            headers={"NGSILD-Tenant": tenant},
         )
 
     def guess_vendor(self) -> tuple[Vendor, Version]:
@@ -823,7 +858,9 @@ class Client:
                 return None
             return vendor, version
         except Exception:
-            self.console.print("Java-Spring based Context Broker detected. [orange]Try to enable info endpoint.")
+            self.console.print(
+                "Java-Spring based Context Broker detected. [orange]Try to enable info endpoint."
+            )
             return None
 
     def _welcome_message(self) -> str:
@@ -837,7 +874,9 @@ class Client:
     def _warn_spring_message(self) -> str:
         return "Java-Spring based Context Broker detected. [orange3]Info endpoint disabled."
 
-    def _create_network(self, root: Entity, G: nx.Graph, nodecache: dict, edgecache: Set):
+    def _create_network(
+        self, root: Entity, G: nx.Graph, nodecache: dict, edgecache: Set
+    ):
         source: Tuple = Urn.split(root.id)
         for _, nodeid in root.relationships:
             target: Tuple = Urn.split(nodeid)
