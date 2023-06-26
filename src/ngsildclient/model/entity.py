@@ -35,8 +35,18 @@ from multipledispatch import dispatch
 from ngsildclient.model.ngsidict import NgsiDict
 from ngsildclient.utils import iso8601, url
 from ngsildclient.utils.urn import Urn
-from ngsildclient.model.exceptions import NgsiMissingIdError, NgsiMissingTypeError, NgsiMissingContextError
-from ngsildclient.model.constants import CORE_CONTEXT, LD_PREFIX, Rel, NgsiDate, NgsiGeometry
+from ngsildclient.model.exceptions import (
+    NgsiMissingIdError,
+    NgsiMissingTypeError,
+    NgsiMissingContextError,
+)
+from ngsildclient.model.constants import (
+    CORE_CONTEXT,
+    LD_PREFIX,
+    Rel,
+    NgsiDate,
+    NgsiGeometry,
+)
 from ngsildclient.settings import globalsettings
 
 logger = logging.getLogger(__name__)
@@ -205,9 +215,13 @@ class Entity:
         self._lastwasmulti: bool = False
 
     @dispatch(str, str)
-    def __init__(self, type: str, id: str, *, ctx: List[str] = None):  # noqa F811
+    def __init__(
+        self, type: str, id: str, *, ctx: List[str] = None
+    ):  # noqa F811
         id = Entity._build_fully_qualified_id(type, id)
-        self.__init__({"id": id, "type": type, "@context": ctx or [CORE_CONTEXT]})
+        self.__init__(
+            {"id": id, "type": type, "@context": ctx or [CORE_CONTEXT]}
+        )
 
     @dispatch(str)
     def __init__(self, id: str, *, ctx: List[str] = None):  # noqa F811
@@ -215,7 +229,9 @@ class Entity:
         urn = Urn(id)
         if (type := urn.infertype()) is None:
             raise NgsiMissingTypeError(f"{urn.fqn=}")
-        self.__init__({"id": id, "type": type, "@context": ctx or [CORE_CONTEXT]})
+        self.__init__(
+            {"id": id, "type": type, "@context": ctx or [CORE_CONTEXT]}
+        )
 
     @classmethod
     def from_dict(cls, payload: dict):
@@ -261,7 +277,9 @@ class Entity:
         return deepcopy(entity)
 
     @classmethod
-    def clone(cls, src: Entity, n: int = 0, f: Callable[[Entity, int], None] = None) -> List[Entity]:
+    def clone(
+        cls, src: Entity, n: int = 0, f: Callable[[Entity, int], None] = None
+    ) -> List[Entity]:
         clones = src * n
         if f:
             for i, c in enumerate(clones, 1):
@@ -328,7 +346,10 @@ class Entity:
                 r.append((k, v.get("object")))
             elif isinstance(v, List):
                 for x in v:
-                    if isinstance(x, Mapping) and x.get("type") == "Relationship":
+                    if (
+                        isinstance(x, Mapping)
+                        and x.get("type") == "Relationship"
+                    ):
                         r.append((k, x.get("object")))
         return r
 
@@ -413,7 +434,9 @@ class Entity:
         self._anchored = False
         return self
 
-    def _update_entity(self, attrname: str, property: NgsiDict, nested: bool = False):
+    def _update_entity(
+        self, attrname: str, property: NgsiDict, nested: bool = False
+    ):
         ismulti = isinstance(property, Sequence)
         nested |= self._anchored
         if nested and not self._lastwasmulti:
@@ -467,7 +490,12 @@ class Entity:
         observedat: Union[str, datetime] = None,
         precision: int = 6,
     ) -> Entity:
-        property = NgsiDict.mkgprop(value, datasetid=datasetid, observedat=observedat, precision=precision)
+        property = NgsiDict.mkgprop(
+            value,
+            datasetid=datasetid,
+            observedat=observedat,
+            precision=precision,
+        )
         self._update_entity(name, property, nested)
         return self
 
@@ -512,7 +540,9 @@ class Entity:
         if nested and self._lastwasmulti:
             raise ValueError("Nesting multi-attribute is not allowed")
         name = name.value if isinstance(name, Rel) else name
-        property = NgsiDict.mkrel(value, datasetid=datasetid, observedat=observedat)
+        property = NgsiDict.mkrel(
+            value, datasetid=datasetid, observedat=observedat
+        )
         self._update_entity(name, property, nested)
         return self
 
@@ -570,7 +600,9 @@ class Entity:
 
     def pprint(self, *args, pattern: str = None, **kwargs):
         """Pretty-print the entity to the standard ouput."""
-        globalsettings.f_print(self.to_json(indent=2, *args, pattern=pattern, **kwargs))
+        globalsettings.f_print(
+            self.to_json(indent=2, *args, pattern=pattern, **kwargs)
+        )
 
     @classmethod
     def load(cls, filename: str):
@@ -737,7 +769,9 @@ class Entity:
             await fp.write(payload)
 
     @classmethod
-    def save_batch(cls, entities: List[Entity], filename: str, *, indent: int = 2):
+    def save_batch(
+        cls, entities: List[Entity], filename: str, *, indent: int = 2
+    ):
         """Save a batch of entities to a JSON file.
 
         Parameters
@@ -766,7 +800,9 @@ class Entity:
             )
 
     @classmethod
-    async def save_batch_async(cls, entities: List[Entity], filename: str, *, indent: int = 2):
+    async def save_batch_async(
+        cls, entities: List[Entity], filename: str, *, indent: int = 2
+    ):
         """Save a batch of entities to a JSON file.
 
         Parameters
