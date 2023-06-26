@@ -546,6 +546,18 @@ class Entity:
         """
         return self.root.to_dict()
 
+    def to_ngsi_dict(self) -> NgsiDict:
+        """Returns the entity as a dictionary.
+
+        The returned type is NgsiDict, fully compatible with a native dict.
+
+        Returns
+        -------
+        NgsiDict
+            The underlying native Python dictionary
+        """
+        return self.root
+
     def to_json(self, *args, pattern: str = None, **kwargs) -> str:
         """Returns the entity as JSON.
 
