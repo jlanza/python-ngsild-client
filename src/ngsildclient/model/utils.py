@@ -30,7 +30,9 @@ class NgsiEncoder(JSONEncoder):
         return str
 
 
-def guess_ngsild_type(attr: Mapping) -> Literal["Property", "GeoProperty", "TemporalProperty", "Relationship"]:
+def guess_ngsild_type(
+    attr: Mapping,
+) -> Literal["Property", "GeoProperty", "TemporalProperty", "Relationship"]:
     if not isinstance(attr, Mapping):  # not a NGSI-LD attribute
         raise ValueError("NGSI-LD attribute MUST be a JSON object")
     type = attr.get("type")
@@ -43,7 +45,13 @@ def guess_ngsild_type(attr: Mapping) -> Literal["Property", "GeoProperty", "Temp
             raise ValueError("Malformed NGSI-LD GeoProperty")
     if type == "Relationship":
         object: str = attr.get("object")
-        if object is not None and object.startswith("urn:ngsi-ld:"):
+        if object is not None and (
+            (isinstance(object, str) and object.startswith("urn:ngsi-ld:"))
+            or (
+                isinstance(object, list)
+                and all(x.startswith("urn:ngsi-ld:") for x in object)
+            )
+        ):
             return type
         else:
             raise ValueError("Malformed NGSI-LD Relationship")
