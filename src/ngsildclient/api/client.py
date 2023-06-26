@@ -477,7 +477,15 @@ class Client:
                 entities = entities[0]
         return self.batch.update(entities, overwrite=overwrite)
 
-    def query_head(self, type: str = None, q: str = None, gq: str = None, ctx: str = None, n: int = 5) -> List[Entity]:
+    def query_head(
+        self,
+        type: str = None,
+        q: str = None,
+        gq: str = None,
+        ctx: str = None,
+        limit: int = 5,
+        offset: int = 0,
+    ) -> List[Entity]:
         """Retrieve entities given its type and/or query string.
 
         Retrieve up to PAGINATION_LIMIT_MAX entities.
@@ -509,7 +517,7 @@ class Client:
         >>> with Client() as client:
         >>>     client.query(type="AgriFarm", q='contactPoint[email]=="wheatfarm@email.com"') # match type and query
         """
-        return self.entities._query(type, q, gq, ctx, limit=n)
+        return self.entities._query(type, q, gq, ctx, limit, offset)
 
     def query(
         self,
