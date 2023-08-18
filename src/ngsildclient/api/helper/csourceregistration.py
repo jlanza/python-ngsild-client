@@ -204,7 +204,7 @@ class RegistrationInfo:
         def from_dict(cls, d: dict) -> "RegistrationInfo.EntityInfo":
             d = humps.decamelize(d)
             return cls(
-                type=d["type"], id=d.get("id"), id_pattern=d.get("idPattern")
+                type=d["type"], id=d.get("id"), id_pattern=d.get("id_pattern")
             )
 
     entities: list[EntityInfo] = None
@@ -256,8 +256,8 @@ class RegistrationInfo:
                 entities.append(cls.EntityInfo.from_dict(e))
         return cls(
             entities=entities,
-            property_names=d.get("propertyNames"),
-            relationship_names=d.get("relationshipNames"),
+            property_names=d.get("property_names"),
+            relationship_names=d.get("relationship_names"),
         )
 
 
