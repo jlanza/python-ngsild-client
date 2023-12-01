@@ -51,7 +51,7 @@ class NgsiDict(Cut, MutableMapping):
     """
 
     def __init__(self, data: dict = None, name: str = None):
-        super().__init__(data)
+        super().__init__(data, sep='->')
         self.name = name
 
     def is_root(self) -> bool:
